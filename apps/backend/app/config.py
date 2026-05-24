@@ -8,9 +8,10 @@ secrets and never hard-coded.
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Annotated
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -45,7 +46,11 @@ class Settings(BaseSettings):
     redis_url: str = Field(default="redis://redis:6379/0")
 
     # --- CORS --------------------------------------------------------------
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    # ``NoDecode`` disables pydantic-settings' source-level JSON parsing so the
+    # validator below can accept a plain comma-separated env value.
+    cors_origins: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["http://localhost:3000"]
+    )
 
     # --- Config rendering --------------------------------------------------
     # Directory where the rendered Traefik dynamic configuration is written.
