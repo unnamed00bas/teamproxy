@@ -117,13 +117,12 @@ services:
       - traefik.http.services.cp-ui.loadbalancer.server.port=3000
 
   traefik:
-    image: traefik:v3.1
+    # v3.6+ auto-negotiates the Docker API version with the daemon. Earlier v3.x
+    # hardcoded API v1.24, which modern daemons reject (min supported >= 1.40).
+    image: traefik:v3.6
     restart: unless-stopped
     environment:
       ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
-      # Pin the Docker API version the provider negotiates with. Without this the
-      # SDK falls back to v1.24, which modern daemons reject (min supported 1.40).
-      DOCKER_API_VERSION: ${DOCKER_API_VERSION:-1.40}
     command:
       - --configFile=/etc/traefik/traefik.yml
     ports:
