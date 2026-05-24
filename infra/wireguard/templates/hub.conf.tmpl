@@ -1,0 +1,20 @@
+# WireGuard hub configuration template (runs on the VPS).
+# Rendered/managed by the control plane. Placeholders in <ANGLE_BRACKETS> are
+# filled from the peer registry. One [Peer] block per site gateway.
+
+[Interface]
+Address = <HUB_TUNNEL_IP>/24
+ListenPort = 51820
+PrivateKey = <HUB_PRIVATE_KEY>
+# Optional NAT/forwarding for routed site subnets:
+# PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+# PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+# --- BEGIN MANAGED PEERS ---
+# {% for peer in peers %}
+# [Peer]
+# # site: {{ peer.site_slug }}
+# PublicKey = {{ peer.public_key }}
+# AllowedIPs = {{ peer.tunnel_ip }}/32, {{ peer.local_subnets | join(', ') }}
+# {% endfor %}
+# --- END MANAGED PEERS ---

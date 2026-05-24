@@ -1,0 +1,149 @@
+# Base / development stack. Run from the repo root:
+#   docker compose -f infra/compose/docker-compose.yml up -d --build
+#
+# Environment is read from the repo-root .env (see .env.example).
+
+name: control-plane
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-control}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-control}
+      POSTGRES_DB: ${POSTGRES_DB:-control_plane}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-control}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [internal]
+
+  backend:
+    build:
+      context: ../../apps/backend
+    restart: unless-stopped
+    env_file: ../../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-control}:${POSTGRES_PASSWORD:-control}@db:5432/${POSTGRES_DB:-control_plane}
+      REDIS_URL: redis://redis:6379/0
+      TRAEFIK_DYNAMIC_DIR: /data/traefik/dynamic
+    volumes:
+      - traefik_dynamic:/data/traefik/dynamic
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks: [internal, edge]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=edge
+      - traefik.http.routers.cp-api.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/healthz`)
+      - traefik.http.routers.cp-api.entrypoints=websecure
+      - traefik.http.routers.cp-api.tls=true
+      - traefik.http.services.cp-api.loadbalancer.server.port=8000
+
+  worker:
+    build:
+      context: ../../apps/backend
+    restart: unless-stopped
+    env_file: ../../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-control}:${POSTGRES_PASSWORD:-control}@db:5432/${POSTGRES_DB:-control_plane}
+      REDIS_URL: redis://redis:6379/0
+      TRAEFIK_DYNAMIC_DIR: /data/traefik/dynamic
+      RUN_MIGRATIONS: "0"
+    command: ["celery", "-A", "app.tasks.celery_app.celery", "worker", "--loglevel=INFO"]
+    volumes:
+      - traefik_dynamic:/data/traefik/dynamic
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [internal]
+
+  beat:
+    build:
+      context: ../../apps/backend
+    restart: unless-stopped
+    env_file: ../../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-control}:${POSTGRES_PASSWORD:-control}@db:5432/${POSTGRES_DB:-control_plane}
+      REDIS_URL: redis://redis:6379/0
+      RUN_MIGRATIONS: "0"
+    command: ["celery", "-A", "app.tasks.celery_app.celery", "beat", "--loglevel=INFO"]
+    depends_on:
+      - redis
+    networks: [internal]
+
+  frontend:
+    build:
+      context: ../../apps/frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks: [internal, edge]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=edge
+      - traefik.http.routers.cp-ui.rule=PathPrefix(`/`)
+      - traefik.http.routers.cp-ui.entrypoints=websecure
+      - traefik.http.routers.cp-ui.tls=true
+      - traefik.http.routers.cp-ui.priority=1
+      - traefik.http.services.cp-ui.loadbalancer.server.port=3000
+
+  traefik:
+    image: traefik:v3.1
+    restart: unless-stopped
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
+    command:
+      - --configFile=/etc/traefik/traefik.yml
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - ../traefik/static/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ../traefik/dynamic/base.yml:/etc/traefik/dynamic/base.yml:ro
+      - traefik_dynamic:/etc/traefik/dynamic
+      - letsencrypt:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [edge]
+
+volumes:
+  pgdata:
+  redisdata:
+  traefik_dynamic:
+  letsencrypt:
+
+networks:
+  internal:
+    driver: bridge
+  edge:
+    name: edge
+    driver: bridge

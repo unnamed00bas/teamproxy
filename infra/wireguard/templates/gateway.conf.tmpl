@@ -1,0 +1,15 @@
+# WireGuard gateway configuration template (runs on each site gateway node).
+# The control plane renders the concrete config via the Peers API
+# (POST /api/v1/peers/{id}/rotate-keys returns a ready-to-use wg-quick config).
+
+[Interface]
+Address = <TUNNEL_IP>/32
+PrivateKey = <GATEWAY_PRIVATE_KEY>
+# Route local subnets toward this gateway by enabling forwarding on the node.
+
+[Peer]
+# VPS hub
+PublicKey = <HUB_PUBLIC_KEY>
+Endpoint = <VPS_ENDPOINT>:51820
+AllowedIPs = <HUB_TUNNEL_SUBNET>
+PersistentKeepalive = 25

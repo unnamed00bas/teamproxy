@@ -1,0 +1,53 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    # Runs on the self-hosted runner installed on the VPS (see
+    # infra/github-runner/README.md). No SSH — compose runs locally.
+    runs-on: [self-hosted, linux, vps]
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write production .env from secrets
+        run: |
+          cat > .env <<EOF
+          ENVIRONMENT=production
+          DEBUG=false
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          FIRST_SUPERADMIN_EMAIL=${{ secrets.FIRST_SUPERADMIN_EMAIL }}
+          FIRST_SUPERADMIN_PASSWORD=${{ secrets.FIRST_SUPERADMIN_PASSWORD }}
+          POSTGRES_USER=control
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB=control_plane
+          REDIS_URL=redis://redis:6379/0
+          ACME_EMAIL=${{ secrets.ACME_EMAIL }}
+          PUBLIC_API_BASE_URL=${{ secrets.PUBLIC_API_BASE_URL }}
+          CORS_ORIGINS=${{ secrets.PUBLIC_API_BASE_URL }}
+          EOF
+
+      - name: Deploy (build, migrate, recreate, smoke-test, rollback on failure)
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        run: |
+          chmod +x infra/scripts/*.sh
+          ./infra/scripts/deploy.sh
+
+      - name: Record deploy revision
+        if: success()
+        run: |
+          echo "Deployed commit ${GITHUB_SHA} at $(date -u)"
+
+      - name: Cleanup env file
+        if: always()
+        run: rm -f .env
