@@ -99,9 +99,11 @@ services:
   frontend:
     build:
       context: ../../apps/frontend
+      args:
+        # Baked into the client bundle at build time. Empty means same-origin
+        # (the browser calls /api on the same host Traefik serves the UI from).
+        NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-}
     restart: unless-stopped
-    environment:
-      NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-http://localhost:8000}
     ports:
       - "3000:3000"
     depends_on:
