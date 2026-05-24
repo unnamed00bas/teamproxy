@@ -1,7 +1,10 @@
 import { clearToken, getToken, setToken } from "./auth";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+// Empty default means same-origin requests (e.g. /api/v1/...), which is how the
+// app is served behind Traefik: the UI and the API share one host, with /api
+// routed to the backend. Set NEXT_PUBLIC_API_BASE_URL only to point the browser
+// at a different origin.
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 const PREFIX = "/api/v1";
 
 export class ApiError extends Error {
