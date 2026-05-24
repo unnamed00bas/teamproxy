@@ -12,6 +12,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml ./
+# Stub package so the editable install's egg_info step succeeds before the real
+# source is copied; this keeps the dependency layer cached separately from code.
+RUN mkdir -p app && touch app/__init__.py
 RUN pip install --upgrade pip && pip install -e .
 
 COPY app ./app
