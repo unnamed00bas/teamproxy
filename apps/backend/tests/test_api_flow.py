@@ -107,6 +107,40 @@ async def test_peer_keygen(client, auth_headers):
 
 
 @pytest.mark.asyncio
+async def test_provision_gateway(client, auth_headers):
+    site = await client.post(
+        "/api/v1/sites", headers=auth_headers, json={"slug": "s3", "name": "Site 3"}
+    )
+    site_id = site.json()["id"]
+    resp = await client.post(
+        "/api/v1/peers/provision-gateway",
+        headers=auth_headers,
+        json={"site_id": site_id},
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["private_key"] and body["public_key"]
+    assert "PrivateKey" in body["config"]
+    # An IP from the hub subnet was allocated (.1 is the hub itself).
+    assert body["assigned_tunnel_ip"] == "10.10.0.2"
+
+    # The site is now bound to the freshly created gateway peer.
+    fetched = await client.get(f"/api/v1/sites/{site_id}", headers=auth_headers)
+    assert fetched.json()["gateway_peer_id"] == body["peer_id"]
+
+    # A second gateway gets the next free address.
+    site2 = await client.post(
+        "/api/v1/sites", headers=auth_headers, json={"slug": "s4", "name": "Site 4"}
+    )
+    resp2 = await client.post(
+        "/api/v1/peers/provision-gateway",
+        headers=auth_headers,
+        json={"site_id": site2.json()["id"]},
+    )
+    assert resp2.json()["assigned_tunnel_ip"] == "10.10.0.3"
+
+
+@pytest.mark.asyncio
 async def test_dashboard(client, auth_headers):
     resp = await client.get("/api/v1/health/dashboard", headers=auth_headers)
     assert resp.status_code == 200

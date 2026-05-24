@@ -45,6 +45,13 @@ class PeerRead(TimestampedSchema, PeerBase):
     transfer_tx: int
 
 
+class GatewayProvisionRequest(BaseModel):
+    """One-click provisioning of a site gateway peer."""
+
+    site_id: str
+    name: str | None = None
+
+
 class PeerKeygenResult(BaseModel):
     """Returned once when keys are generated. Private key is not persisted."""
 
@@ -52,3 +59,5 @@ class PeerKeygenResult(BaseModel):
     public_key: str
     private_key: str
     config: str
+    assigned_tunnel_ip: str | None = None
+    hub_configured: bool = True
