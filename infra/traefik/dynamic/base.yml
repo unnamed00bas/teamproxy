@@ -1,0 +1,23 @@
+# Base dynamic config: shared middlewares and TLS options.
+# The control plane writes control-plane.yml alongside this file; Traefik merges
+# all files in the watched directory.
+
+http:
+  middlewares:
+    secure-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+
+    compress:
+      compress: {}
+
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12
+      sniStrict: false
