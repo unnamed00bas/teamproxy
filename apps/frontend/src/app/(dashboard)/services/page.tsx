@@ -7,20 +7,20 @@ import type { Service } from "@/lib/types";
 export default function ServicesPage() {
   return (
     <ResourceList<Service>
-      title="Services"
+      title="Сервисы"
       path="/services"
       columns={[
-        { key: "name", label: "Name" },
-        { key: "protocol_type", label: "Protocol" },
+        { key: "name", label: "Название" },
+        { key: "protocol_type", label: "Протокол" },
         {
           key: "backend",
-          label: "Backend",
+          label: "Бэкенд",
           render: (s) => `${s.backend_host}:${s.backend_port}`,
         },
-        { key: "exposure_mode", label: "Exposure" },
+        { key: "exposure_mode", label: "Доступ" },
         {
           key: "enabled",
-          label: "Enabled",
+          label: "Включён",
           render: (s) => (
             <StatusBadge value={s.enabled ? "active" : "disabled"} />
           ),

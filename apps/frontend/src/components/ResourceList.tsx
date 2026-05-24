@@ -59,17 +59,17 @@ export function ResourceList<T extends { id: string }>({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">{title}</h1>
         {actions}
       </div>
       <input
         className="input max-w-sm"
-        placeholder="Filter…"
+        placeholder="Поиск…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      {error && <div className="text-red-400">Error: {error}</div>}
+      {error && <div className="text-red-400">Ошибка: {error}</div>}
       <div className="card overflow-x-auto p-0">
         <table className="data">
           <thead>
@@ -82,12 +82,12 @@ export function ResourceList<T extends { id: string }>({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={columns.length}>Loading…</td>
+                <td colSpan={columns.length}>Загрузка…</td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="text-slate-500">
-                  No records
+                  Нет записей
                 </td>
               </tr>
             ) : (
@@ -113,7 +113,7 @@ export function ResourceList<T extends { id: string }>({
           </tbody>
         </table>
       </div>
-      <div className="text-xs text-slate-500">{total} total</div>
+      <div className="text-xs text-slate-500">Всего: {total}</div>
     </div>
   );
 }

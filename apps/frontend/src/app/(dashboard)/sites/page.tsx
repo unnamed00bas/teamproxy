@@ -6,16 +6,16 @@ import type { Site } from "@/lib/types";
 export default function SitesPage() {
   return (
     <ResourceList<Site>
-      title="Sites"
+      title="Сайты"
       path="/sites"
       columns={[
-        { key: "name", label: "Name" },
-        { key: "slug", label: "Slug" },
-        { key: "status", label: "Status", badge: true },
-        { key: "nodes_count", label: "Nodes" },
-        { key: "services_count", label: "Services" },
-        { key: "publications_count", label: "Publications" },
-        { key: "peers_count", label: "Peers" },
+        { key: "name", label: "Название" },
+        { key: "slug", label: "Слаг" },
+        { key: "status", label: "Статус", badge: true },
+        { key: "nodes_count", label: "Узлы" },
+        { key: "services_count", label: "Сервисы" },
+        { key: "publications_count", label: "Публикации" },
+        { key: "peers_count", label: "Пиры" },
       ]}
     />
   );

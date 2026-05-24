@@ -14,18 +14,18 @@ interface Node {
 export default function NodesPage() {
   return (
     <ResourceList<Node>
-      title="Nodes"
+      title="Узлы"
       path="/nodes"
       columns={[
-        { key: "hostname", label: "Hostname" },
-        { key: "private_ip", label: "Private IP" },
-        { key: "platform", label: "Platform" },
+        { key: "hostname", label: "Хост" },
+        { key: "private_ip", label: "Внутренний IP" },
+        { key: "platform", label: "Платформа" },
         {
           key: "is_gateway",
-          label: "Gateway",
-          render: (n) => (n.is_gateway ? "yes" : "—"),
+          label: "Шлюз",
+          render: (n) => (n.is_gateway ? "да" : "—"),
         },
-        { key: "status", label: "Status", badge: true },
+        { key: "status", label: "Статус", badge: true },
       ]}
     />
   );

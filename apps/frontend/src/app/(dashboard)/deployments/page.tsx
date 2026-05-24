@@ -16,19 +16,19 @@ interface Deployment {
 export default function DeploymentsPage() {
   return (
     <ResourceList<Deployment>
-      title="Deployments"
+      title="Развёртывания"
       path="/deployments"
       columns={[
-        { key: "number", label: "#" },
+        { key: "number", label: "№" },
         {
           key: "commit_sha",
-          label: "Commit",
+          label: "Коммит",
           render: (d) => (d.commit_sha ? d.commit_sha.slice(0, 8) : "—"),
         },
-        { key: "initiated_by", label: "By" },
-        { key: "mode", label: "Mode" },
-        { key: "status", label: "Status", badge: true },
-        { key: "health_result", label: "Health", badge: true },
+        { key: "initiated_by", label: "Кем" },
+        { key: "mode", label: "Режим" },
+        { key: "status", label: "Статус", badge: true },
+        { key: "health_result", label: "Состояние", badge: true },
       ]}
     />
   );

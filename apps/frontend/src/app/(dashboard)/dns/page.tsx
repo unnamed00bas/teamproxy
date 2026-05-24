@@ -21,31 +21,31 @@ export default function DnsPage() {
   return (
     <div className="space-y-8">
       <ResourceList<Domain>
-        title="DNS Records"
+        title="DNS-записи"
         path="/dns"
         columns={[
           { key: "fqdn", label: "FQDN" },
-          { key: "record_type", label: "Type" },
+          { key: "record_type", label: "Тип" },
           {
             key: "active",
-            label: "Active",
-            render: (d) => (d.active ? "yes" : "no"),
+            label: "Активна",
+            render: (d) => (d.active ? "да" : "нет"),
           },
         ]}
       />
       <ResourceList<Certificate>
-        title="TLS Certificates"
+        title="TLS-сертификаты"
         path="/tls"
         columns={[
           {
             key: "domains",
-            label: "Domains",
+            label: "Домены",
             render: (c) => c.domains.join(", "),
           },
-          { key: "status", label: "Status", badge: true },
+          { key: "status", label: "Статус", badge: true },
           {
             key: "not_after",
-            label: "Expires",
+            label: "Истекает",
             render: (c) =>
               c.not_after ? new Date(c.not_after).toLocaleDateString() : "—",
           },

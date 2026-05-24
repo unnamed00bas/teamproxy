@@ -19,20 +19,20 @@ export default function LoginPage() {
       await login(email, password);
       router.push("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : "Ошибка входа");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="flex h-screen items-center justify-center">
-      <form onSubmit={onSubmit} className="card w-80 space-y-4">
+    <div className="flex h-screen items-center justify-center p-4">
+      <form onSubmit={onSubmit} className="card w-full max-w-xs space-y-4">
         <h1 className="text-lg font-semibold">Control Plane</h1>
         <input
           className="input"
           type="email"
-          placeholder="Email"
+          placeholder="Эл. почта"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -40,14 +40,14 @@ export default function LoginPage() {
         <input
           className="input"
           type="password"
-          placeholder="Password"
+          placeholder="Пароль"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
         {error && <div className="text-sm text-red-400">{error}</div>}
         <button className="btn w-full" disabled={busy}>
-          {busy ? "Signing in…" : "Sign in"}
+          {busy ? "Вход…" : "Войти"}
         </button>
       </form>
     </div>

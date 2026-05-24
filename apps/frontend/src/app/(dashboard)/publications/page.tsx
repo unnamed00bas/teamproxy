@@ -26,7 +26,7 @@ export default function PublicationsPage() {
     setBusy(true);
     try {
       await api.post("/publications/apply");
-      alert("Config applied");
+      alert("Конфигурация применена");
     } catch (e) {
       alert(e instanceof Error ? e.message : "error");
     } finally {
@@ -37,32 +37,32 @@ export default function PublicationsPage() {
   return (
     <div className="space-y-4">
       <ResourceList<Publication>
-        title="Publications"
+        title="Публикации"
         path="/publications"
         actions={
           <div className="flex gap-2">
             <button className="btn-ghost" onClick={showPreview} disabled={busy}>
-              Preview config
+              Предпросмотр
             </button>
             <button className="btn" onClick={apply} disabled={busy}>
-              Render &amp; apply
+              Применить
             </button>
           </div>
         }
         columns={[
-          { key: "domain_or_sni", label: "Domain / SNI" },
-          { key: "entrypoint_type", label: "Entrypoint" },
+          { key: "domain_or_sni", label: "Домен / SNI" },
+          { key: "entrypoint_type", label: "Точка входа" },
           { key: "tls_mode", label: "TLS" },
-          { key: "priority", label: "Priority" },
+          { key: "priority", label: "Приоритет" },
           {
             key: "maintenance_mode",
-            label: "Maintenance",
+            label: "Обслуживание",
             render: (p) =>
               p.maintenance_mode ? <StatusBadge value="degraded" /> : "—",
           },
           {
             key: "public_enabled",
-            label: "Public",
+            label: "Публично",
             render: (p) => (
               <StatusBadge value={p.public_enabled ? "online" : "disabled"} />
             ),
@@ -71,7 +71,9 @@ export default function PublicationsPage() {
       />
       {preview !== null && (
         <div className="card">
-          <h2 className="mb-2 font-medium">Generated Traefik dynamic config</h2>
+          <h2 className="mb-2 font-medium">
+            Сгенерированная конфигурация Traefik
+          </h2>
           <pre className="overflow-x-auto whitespace-pre-wrap text-xs text-slate-300">
             {preview}
           </pre>

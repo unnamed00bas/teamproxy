@@ -16,11 +16,29 @@ const COLORS: Record<string, string> = {
   unknown: "bg-slate-500/20 text-slate-400",
 };
 
+const LABELS: Record<string, string> = {
+  online: "онлайн",
+  active: "активен",
+  green: "норма",
+  ok: "ок",
+  degraded: "деградация",
+  stale: "устарел",
+  yellow: "внимание",
+  pending: "ожидание",
+  offline: "офлайн",
+  red: "ошибка",
+  error: "ошибка",
+  failed: "сбой",
+  disabled: "отключён",
+  archived: "архив",
+  unknown: "неизвестно",
+};
+
 export function StatusBadge({ value }: { value: string }) {
   const cls = COLORS[value] || "bg-slate-500/20 text-slate-400";
   return (
     <span className={`rounded px-2 py-0.5 text-xs font-medium ${cls}`}>
-      {value}
+      {LABELS[value] ?? value}
     </span>
   );
 }

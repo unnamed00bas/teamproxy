@@ -22,17 +22,17 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Settings</h1>
+      <h1 className="text-xl font-semibold">Настройки</h1>
       <div className="card">
-        <h2 className="mb-2 font-medium">Account</h2>
+        <h2 className="mb-2 font-medium">Аккаунт</h2>
         <div className="text-sm text-slate-300">
-          <div>Email: {me?.email ?? "—"}</div>
-          <div>Role: {me?.role ?? "—"}</div>
+          <div>Эл. почта: {me?.email ?? "—"}</div>
+          <div>Роль: {me?.role ?? "—"}</div>
         </div>
       </div>
       <div className="card">
-        <h2 className="mb-2 font-medium">Runtime</h2>
-        <pre className="text-xs text-slate-300">
+        <h2 className="mb-2 font-medium">Среда выполнения</h2>
+        <pre className="overflow-x-auto text-xs text-slate-300">
           {info ? JSON.stringify(info, null, 2) : "—"}
         </pre>
       </div>

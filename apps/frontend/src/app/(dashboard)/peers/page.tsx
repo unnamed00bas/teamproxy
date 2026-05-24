@@ -6,13 +6,13 @@ import type { Peer } from "@/lib/types";
 export default function PeersPage() {
   return (
     <ResourceList<Peer>
-      title="VPN / Peers"
+      title="VPN / Пиры"
       path="/peers"
       columns={[
-        { key: "name", label: "Name" },
-        { key: "role", label: "Role" },
-        { key: "assigned_tunnel_ip", label: "Tunnel IP" },
-        { key: "status", label: "Status", badge: true },
+        { key: "name", label: "Имя" },
+        { key: "role", label: "Роль" },
+        { key: "assigned_tunnel_ip", label: "IP туннеля" },
+        { key: "status", label: "Статус", badge: true },
       ]}
     />
   );
