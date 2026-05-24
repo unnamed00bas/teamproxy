@@ -16,7 +16,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-control}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-control} -d ${POSTGRES_DB:-control_plane}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -121,6 +121,9 @@ services:
     restart: unless-stopped
     environment:
       ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
+      # Pin the Docker API version the provider negotiates with. Without this the
+      # SDK falls back to v1.24, which modern daemons reject (min supported 1.40).
+      DOCKER_API_VERSION: ${DOCKER_API_VERSION:-1.40}
     command:
       - --configFile=/etc/traefik/traefik.yml
     ports:
