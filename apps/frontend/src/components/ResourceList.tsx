@@ -21,11 +21,13 @@ export function ResourceList<T extends { id: string }>({
   path,
   columns,
   actions,
+  refreshToken,
 }: {
   title: string;
   path: string;
   columns: Column<T>[];
   actions?: React.ReactNode;
+  refreshToken?: number;
 }) {
   const [rows, setRows] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
@@ -49,7 +51,7 @@ export function ResourceList<T extends { id: string }>({
     return () => {
       cancelled = true;
     };
-  }, [path]);
+  }, [path, refreshToken]);
 
   const filtered = query
     ? rows.filter((r) =>
