@@ -19,6 +19,8 @@ from app.schemas.common import ORMModel, TimestampedSchema
 class DomainBase(BaseModel):
     fqdn: str
     record_type: str = "A"
+    value: str | None = None
+    ttl: int | None = None
     active: bool = True
     publication_id: str | None = None
 
@@ -30,6 +32,8 @@ class DomainCreate(DomainBase):
 class DomainUpdate(BaseModel):
     fqdn: str | None = None
     record_type: str | None = None
+    value: str | None = None
+    ttl: int | None = None
     active: bool | None = None
     publication_id: str | None = None
 

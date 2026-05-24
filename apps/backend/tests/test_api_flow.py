@@ -141,6 +141,47 @@ async def test_provision_gateway(client, auth_headers):
 
 
 @pytest.mark.asyncio
+async def test_dns_records(client, auth_headers):
+    # A valid A record stores value + TTL.
+    ok = await client.post(
+        "/api/v1/dns",
+        headers=auth_headers,
+        json={"fqdn": "app.mishteam.site", "record_type": "A",
+              "value": "203.0.113.10", "ttl": 3600},
+    )
+    assert ok.status_code == 201, ok.text
+    body = ok.json()
+    assert body["value"] == "203.0.113.10"
+    assert body["ttl"] == 3600
+
+    # An A record whose value is not an IPv4 address is rejected.
+    bad = await client.post(
+        "/api/v1/dns",
+        headers=auth_headers,
+        json={"fqdn": "bad.mishteam.site", "record_type": "A", "value": "not-an-ip"},
+    )
+    assert bad.status_code == 422
+
+    # A bad TTL is rejected.
+    bad_ttl = await client.post(
+        "/api/v1/dns",
+        headers=auth_headers,
+        json={"fqdn": "ttl.mishteam.site", "record_type": "A",
+              "value": "203.0.113.11", "ttl": 5},
+    )
+    assert bad_ttl.status_code == 422
+
+    # A CNAME pointing at a hostname is fine.
+    cname = await client.post(
+        "/api/v1/dns",
+        headers=auth_headers,
+        json={"fqdn": "www.mishteam.site", "record_type": "CNAME",
+              "value": "app.mishteam.site"},
+    )
+    assert cname.status_code == 201
+
+
+@pytest.mark.asyncio
 async def test_dashboard(client, auth_headers):
     resp = await client.get("/api/v1/health/dashboard", headers=auth_headers)
     assert resp.status_code == 200

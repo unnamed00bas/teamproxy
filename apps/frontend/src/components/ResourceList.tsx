@@ -21,12 +21,14 @@ export function ResourceList<T extends { id: string }>({
   path,
   columns,
   actions,
+  rowActions,
   refreshToken,
 }: {
   title: string;
   path: string;
   columns: Column<T>[];
   actions?: React.ReactNode;
+  rowActions?: (row: T) => React.ReactNode;
   refreshToken?: number;
 }) {
   const [rows, setRows] = useState<T[]>([]);
@@ -79,16 +81,22 @@ export function ResourceList<T extends { id: string }>({
               {columns.map((c) => (
                 <th key={String(c.key)}>{c.label}</th>
               ))}
+              {rowActions && <th className="text-right" />}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={columns.length}>Загрузка…</td>
+                <td colSpan={columns.length + (rowActions ? 1 : 0)}>
+                  Загрузка…
+                </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="text-slate-500">
+                <td
+                  colSpan={columns.length + (rowActions ? 1 : 0)}
+                  className="text-slate-500"
+                >
                   Нет записей
                 </td>
               </tr>
@@ -109,6 +117,11 @@ export function ResourceList<T extends { id: string }>({
                       </td>
                     );
                   })}
+                  {rowActions && (
+                    <td className="whitespace-nowrap text-right">
+                      {rowActions(row)}
+                    </td>
+                  )}
                 </tr>
               ))
             )}

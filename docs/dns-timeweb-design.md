@@ -1,113 +1,49 @@
-# DNS auto-discovery & sync — Timeweb Cloud (design)
+# DNS records — current model & Timeweb (future)
 
-Status: **design only** (not implemented). Goal: let the control plane pull the
-existing records of a zone (e.g. `*.mishteam.site`) from Timeweb Cloud and show
-them in the UI, instead of the current manual-only `domains` registry.
+DNS provider for this deployment is **Timeweb Cloud** (zone e.g.
+`mishteam.site`).
 
-## Why this is needed
+## What is implemented
 
-Today (`apps/backend/app/api/v1/dns.py`, `app/models/domain.py`) the `domains`
-table is a hand-maintained list — there is no provider integration, so the UI
-can only display what an operator typed in. To "show all `*.mishteam.site`
-addresses" we must fetch them from the authoritative DNS, which is Timeweb.
+Records are entered and edited **manually** in the panel (no provider
+auto-discovery / list-fetch). The `domains` table is a registry of the records
+an operator intends to exist:
 
-> Note on wildcards: DNS itself cannot enumerate names behind a `*` record via
-> normal queries (no zone transfer from public resolvers). Enumeration must come
-> from the **provider API**, which lists the concrete records in the zone.
+- Fields: `fqdn`, `record_type` (A / AAAA / CNAME / TXT / MX / NS), `value`
+  (the record target), `ttl`, `active`, optional `publication_id` link.
+- Server-side validation (`apps/backend/app/api/v1/dns.py`): `A` → IPv4, `AAAA`
+  → IPv6, `CNAME` → hostname; `ttl` within 60…2592000s. Value may be empty so a
+  record can be registered before its target is known.
+- Full CRUD via `/api/v1/dns` and a create/edit/delete UI on the DNS page.
 
-## Provider: Timeweb Cloud DNS API
+### How settings actually "apply"
 
-- REST API, bearer-token auth: `Authorization: Bearer <TIMEWEB_API_TOKEN>`.
-- Relevant endpoints (verify exact paths/shape against current Timeweb docs
-  before coding):
-  - List domains on the account.
-  - List records of a domain (`A`, `AAAA`, `CNAME`, `TXT`, …) — this is the
-    enumeration we surface.
-  - Create / update / delete a record (for the optional write-back path).
-- Token is a **secret**: inject via env (`TIMEWEB_API_TOKEN`), never persist in
-  the DB; track only `SecretMetadata` like other secrets.
+Edge **routing and TLS** are rendered from **publications**, not from the
+`domains` table (`app/services/config_renderer/traefik.py`):
 
-## Settings (config.py / .env)
+- A publication carries `domain_or_sni`, `tls_enabled`, `tls_mode`,
+  `path_prefix`, etc. The renderer emits a deterministic Traefik dynamic config
+  and writes it to the file-provider dir, which Traefik hot-reloads.
+- HTTPS terminates on the VPS; `tls_enabled` publications get
+  `certResolver: letsencrypt`, so the certificate is requested automatically.
 
-```
-DNS_PROVIDER=timeweb            # off | timeweb
-TIMEWEB_API_TOKEN=              # secret, env-only
-DNS_ROOT_ZONE=mishteam.site     # zone to enumerate
-DNS_SYNC_INTERVAL_MINUTES=15    # background refresh cadence
-```
+So a DNS record is the "name should resolve to the VPS" half; the publication
+is the "VPS should route that name to a backend over the tunnel" half. Linking a
+record to its publication keeps the two views consistent in the UI.
 
-Expose only non-sensitive fields via `/settings/info`
-(`dns_provider`, `dns_root_zone`, `dns_configured`).
+## Future option: push records to Timeweb (NOT implemented)
 
-## Backend shape
+If we later want the control plane to create the records in DNS itself
+(instead of an operator doing it in the Timeweb panel):
 
-New module `app/services/dns/` with a small provider interface so other
-providers can be added later:
+- Settings: `DNS_PROVIDER=timeweb`, `TIMEWEB_API_TOKEN` (secret, env-only),
+  `DNS_ROOT_ZONE`.
+- A `DnsProvider` seam (`list_records` / `upsert_record` / `delete_record`)
+  with a `TimewebProvider` using `httpx` + retry/backoff against the Timeweb
+  Cloud DNS API (bearer token). Persist the provider record id for idempotent
+  update/delete.
+- On create/update/delete of a `domains` row, mirror the change to Timeweb.
+- Treat the token as a secret (env + `SecretMetadata`); never return it.
 
-```python
-class DnsProvider(Protocol):
-    async def list_records(self, zone: str) -> list[DiscoveredRecord]: ...
-    async def upsert_record(self, zone: str, rec: DiscoveredRecord) -> None: ...
-    async def delete_record(self, zone: str, rec_id: str) -> None: ...
-
-@dataclass
-class DiscoveredRecord:
-    fqdn: str
-    record_type: str        # A / AAAA / CNAME / TXT ...
-    value: str
-    ttl: int | None
-    provider_id: str        # Timeweb's record id, for idempotent sync
-```
-
-`TimewebProvider` implements it with `httpx.AsyncClient` + retry/backoff.
-
-### Data model change
-
-Extend `domains` (one Alembic migration) so discovered records are
-distinguishable from manually-created ones and sync is idempotent:
-
-- `source: str` — `manual` | `discovered` (default `manual`).
-- `provider_id: str | None` — provider's record id (unique per provider).
-- `value: str | None`, `ttl: int | None` — last-seen record data.
-- `last_synced_at: datetime | None`.
-
-Keep `fqdn` unique; on sync, match by `provider_id` first, then `fqdn`.
-
-### API endpoints (`/api/v1/dns`)
-
-- `POST /dns/sync` (operator) — pull the zone now, upsert discovered rows,
-  mark rows that vanished from the provider as `active=false`; return a summary
-  `{created, updated, removed}`. Audited as `dns.sync`.
-- `GET /dns?source=discovered|manual` — filter in the existing list endpoint.
-- (Optional, phase 2) `POST /dns/{id}/publish` — write a control-plane record
-  back to Timeweb (e.g. point a new publication's host at the VPS IP).
-
-### Background sync
-
-Add a Celery beat task (`app/tasks/jobs.py`, scheduled in `celery_app.py`)
-running every `DNS_SYNC_INTERVAL_MINUTES` that calls the same sync routine, so
-the UI stays fresh without manual refresh. Make it a no-op when
-`DNS_PROVIDER=off`.
-
-## Frontend
-
-- DNS page: add a **«Синхронизировать»** button (calls `POST /dns/sync`,
-  then refreshes the list via the existing `refreshToken`), a "source" badge
-  (ручная / из Timeweb), and `value` / `TTL` columns.
-- Show a hint when `dns_configured` is false (no token/zone set).
-
-## Security & failure modes
-
-- Token only in env + `SecretMetadata`; never returned by any endpoint.
-- Treat provider data as untrusted input (validate FQDN/type before storing).
-- Network errors: retry with backoff; surface last sync status in the UI; never
-  delete manual rows on a failed/partial sync (only flip `active` for
-  previously-discovered rows that are confirmed gone).
-- Rate limits: respect Timeweb limits; the 15-min cadence + manual button is
-  enough for an admin panel.
-
-## Open questions
-
-1. One zone (`mishteam.site`) or multiple? (Design supports a list later.)
-2. Should the control plane ever **write** records (phase 2), or only read?
-3. Per-record TTL policy when we create A-records for new publications.
+This is intentionally deferred — current scope is manual entry + correct
+Traefik/TLS generation.
