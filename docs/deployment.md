@@ -1,11 +1,13 @@
 # Deployment
 
-## Prerequisites (VPS)
+## Prerequisites (server)
 
 - Linux host with a public IP and DNS pointing at it.
 - Docker Engine + Compose v2.
 - Ports 80/443 open. WireGuard UDP 51820 open (for the hub).
-- A self-hosted GitHub Actions runner (see `infra/github-runner/README.md`).
+- An SSH user in the `docker` group + a deploy SSH key. Automatic deploys are
+  driven by GitHub Actions over SSH — **no self-hosted runner**. See
+  `infra/deploy/README.md`.
 
 ## First boot
 
@@ -65,6 +67,13 @@ the API: `POST /api/v1/publications/rollback/{revision}`.
 ## Secrets
 
 - Local: `.env` (gitignored).
-- Production CD: GitHub repository **Secrets** are written into a transient
-  `.env` by `deploy.yml` and removed afterwards.
+- Production CD: GitHub repository **Secrets** are rendered into a `.env` on the
+  GitHub-hosted runner, `rsync`-ed to the server, and kept only inside
+  `$DEPLOY_PATH`. Never committed.
 - The API never returns secret values — only metadata via `/settings/secrets`.
+
+## Automatic deployment
+
+Push to `main` → GitHub Actions (`ubuntu-latest`) → SSH to the server → build &
+run there. No self-hosted runner. Setup and the full secret/variable list are in
+`infra/deploy/README.md`.

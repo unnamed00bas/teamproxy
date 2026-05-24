@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
-# Post-deploy smoke checks. Not just "container alive" — it verifies the API
-# answers and (optionally) that a known route responds.
+# Post-deploy smoke check. Not just "container alive" — it verifies the API
+# actually answers. In production the backend has no published host port (only
+# Traefik is exposed), so we probe from inside the container via compose exec.
 set -euo pipefail
 
-BACKEND_URL="${BACKEND_HEALTH_URL:-http://localhost:8000/readyz}"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$REPO_ROOT"
+
+# Reuse the same compose invocation as deploy.sh when provided.
+COMPOSE="${COMPOSE_CMD:-docker compose -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.prod.yml}"
 RETRIES="${HEALTH_RETRIES:-20}"
 SLEEP="${HEALTH_SLEEP:-3}"
 
-echo "[healthcheck] probing $BACKEND_URL"
+echo "[healthcheck] probing backend /readyz via 'compose exec'"
 for i in $(seq 1 "$RETRIES"); do
-  if curl -fsS "$BACKEND_URL" >/dev/null 2>&1; then
+  if $COMPOSE exec -T backend curl -fsS http://localhost:8000/readyz >/dev/null 2>&1; then
     echo "[healthcheck] backend ready after ${i} attempt(s)"
     exit 0
   fi

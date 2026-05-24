@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# Idempotent deploy script run by the self-hosted GitHub Actions runner on the
-# VPS. Builds the stack, applies migrations, runs smoke checks and rolls back on
-# critical failure. Designed to be re-runnable safely.
+# Idempotent deploy script, executed ON THE SERVER (invoked over SSH by the
+# GitHub Actions 'Deploy' workflow). Builds the stack, applies migrations, runs
+# smoke checks and rolls back on critical failure. Safe to re-run by hand too.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 COMPOSE="docker compose -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.prod.yml"
+# Share the exact compose invocation with healthcheck.sh.
+export COMPOSE_CMD="$COMPOSE"
 BACKUP_DIR="${BACKUP_DIR:-$REPO_ROOT/backups}"
 TS="$(date +%Y%m%d-%H%M%S)"
 

@@ -12,33 +12,42 @@ Runs on every push and PR to `main`. Three parallel jobs:
 
 ## CD — `.github/workflows/deploy.yml`
 
-Triggers on push to `main` (and manual `workflow_dispatch`). Runs on the
-**self-hosted runner on the VPS** (`runs-on: [self-hosted, linux, vps]`), so no
-SSH is involved — `docker compose` runs locally against the production stack.
+Triggers on push to `main` (and manual `workflow_dispatch`). Runs on a
+**GitHub-hosted runner** (`ubuntu-latest`) — **no self-hosted runner**. The job
+connects to your server over SSH, syncs the code, and builds + runs the stack
+**on the server**.
 
 Pipeline steps:
 
 1. Checkout.
-2. Materialise a production `.env` from GitHub Secrets.
-3. `infra/scripts/deploy.sh`:
-   - back up DB + dynamic configs,
-   - `docker compose pull` + `build`,
+2. Configure the SSH key from `SSH_PRIVATE_KEY` (+ `ssh-keyscan` of the host).
+3. Render a production `.env` from GitHub Secrets.
+4. `rsync` the working tree (including `.env`) to `$DEPLOY_PATH` on the server
+   (`--delete`, excluding `.git`, `.venv`, `node_modules`, `.next`, `backups`).
+5. SSH into the server and run `infra/scripts/deploy.sh`, which:
+   - backs up DB + dynamic configs,
+   - `docker compose build` (images built **on the server**),
    - `alembic upgrade head` (one-off backend container),
    - `docker compose up -d --remove-orphans`,
-   - **smoke test** via `healthcheck.sh` (`/readyz` must answer),
+   - **smoke test** via `healthcheck.sh` (`compose exec backend curl /readyz`),
    - **rollback** the stack if the smoke test fails (non-zero exit).
-4. Record the deployed revision.
-5. Always remove the transient `.env`.
 
 `concurrency: production-deploy` (no cancel-in-progress) serialises deploys so
-two pushes can't race on the same host.
+two pushes can't race on the host.
 
-## Required secrets
+## Required configuration (one-time)
 
-Configure under **Settings → Secrets and variables → Actions**:
+Full walkthrough in `infra/deploy/README.md`. Under **Settings → Secrets and
+variables → Actions**:
 
-`SECRET_KEY`, `POSTGRES_PASSWORD`, `FIRST_SUPERADMIN_EMAIL`,
-`FIRST_SUPERADMIN_PASSWORD`, `ACME_EMAIL`, `PUBLIC_API_BASE_URL`.
+- **Secrets:** `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SECRET_KEY`,
+  `POSTGRES_PASSWORD`, `FIRST_SUPERADMIN_EMAIL`, `FIRST_SUPERADMIN_PASSWORD`,
+  `ACME_EMAIL`, `PUBLIC_API_BASE_URL`.
+- **Variables (optional):** `SSH_PORT` (default `22`),
+  `DEPLOY_PATH` (default `/opt/control-plane`).
+
+The server only needs Docker + Compose and an SSH user in the `docker` group —
+no runner daemon, no registry (images build on the server).
 
 ## Zero/minimal-downtime (optional upgrade)
 

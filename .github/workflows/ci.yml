@@ -29,13 +29,13 @@ jobs:
 
       - name: Run tests
         env:
-          DATABASE_URL: sqlite+aiosqlite:///:memory:
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
           SECRET_KEY: ci-secret
-        run: pytest -q -W ignore::Warning
+        run: pytest -q -W "ignore::Warning"
 
       - name: Verify migrations apply on a fresh DB
         env:
-          DATABASE_URL: sqlite+aiosqlite:///./ci.db
+          DATABASE_URL: "sqlite+aiosqlite:///./ci.db"
         run: alembic upgrade head
 
   frontend:

@@ -4,7 +4,8 @@ Self-hosted control plane for publishing services that live on several local
 sites (behind NAT) to the internet through a single VPS with a public IP and
 domains. A web UI manages sites, VPN peers, nodes, services, publications, DNS,
 TLS, deployments and a full audit trail. Everything runs via Docker Compose and
-auto-deploys on push to `main` through a self-hosted GitHub Actions runner.
+auto-deploys on push to `main` via GitHub Actions over SSH (no self-hosted
+runner).
 
 ## Architecture at a glance
 
@@ -38,7 +39,7 @@ Components (a monorepo):
 | `infra/traefik` | Traefik static config + base dynamic config (file provider) |
 | `infra/wireguard` | hub/gateway config templates |
 | `infra/scripts` | deploy / backup / restore / healthcheck |
-| `infra/systemd`, `infra/github-runner` | self-hosted runner unit + setup notes |
+| `infra/deploy` | automatic-deploy setup (GitHub Actions over SSH) |
 | `packages/shared-types` | canonical TypeScript API contracts |
 | `packages/config-schema` | JSON Schema for the publication contract |
 | `.github/workflows` | `ci.yml` (lint/test/build) + `deploy.yml` (CD) |
@@ -95,6 +96,6 @@ npm run typecheck && npm run lint && npm run build
   rollback
 - Health checks (HTTP + TCP), dashboard aggregation
 - Full audit log on every mutation
-- Docker Compose deployment + GitHub Actions CD on a self-hosted VPS runner
+- Docker Compose deployment + GitHub Actions CD over SSH (build & run on the server)
 
 See `docs/` for details and `docs/roadmap.md` for what comes after the MVP.

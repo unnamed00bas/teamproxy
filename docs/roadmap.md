@@ -11,7 +11,7 @@
 - [x] Apply (atomic write → hot reload) + rollback
 - [x] Health checks (HTTP/TCP) + dashboard + audit log
 - [x] Celery worker/beat (health sweeps, peer staleness, periodic render)
-- [x] CI (lint/test/build) + CD via self-hosted VPS runner
+- [x] CI (lint/test/build) + CD via GitHub Actions over SSH (build/run on server)
 - [x] Docs + `.env.example` + backup/restore scripts
 
 ## Already scaffolded, ready to extend
