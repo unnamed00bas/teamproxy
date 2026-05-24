@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ipaddress
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,6 +15,35 @@ from app.schemas.common import Message, Page
 from app.schemas.misc import DomainCreate, DomainRead, DomainUpdate
 
 router = APIRouter()
+
+
+def _validate_record(record_type: str, value: str | None, ttl: int | None) -> None:
+    """Reject records whose value does not match the type, or bad TTLs.
+
+    Validation only runs when a value is supplied — an empty value is allowed
+    so a record can be registered before its target is known.
+    """
+    if ttl is not None and not (60 <= ttl <= 2_592_000):
+        raise HTTPException(status_code=422, detail="TTL must be between 60 and 2592000 seconds")
+    if not value:
+        return
+    rtype = record_type.upper()
+    if rtype == "A":
+        try:
+            ipaddress.IPv4Address(value)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=422, detail="A record value must be an IPv4 address"
+            ) from exc
+    elif rtype == "AAAA":
+        try:
+            ipaddress.IPv6Address(value)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=422, detail="AAAA record value must be an IPv6 address"
+            ) from exc
+    elif rtype == "CNAME" and (" " in value or "/" in value):
+        raise HTTPException(status_code=422, detail="CNAME value must be a hostname")
 
 
 @router.get("", response_model=Page[DomainRead])
@@ -35,6 +65,7 @@ async def create_domain(
     payload: DomainCreate,
     actor: Annotated[User, Depends(require_operator)],
 ) -> Domain:
+    _validate_record(payload.record_type, payload.value, payload.ttl)
     exists = await session.execute(select(Domain).where(Domain.fqdn == payload.fqdn))
     if exists.scalar_one_or_none() is not None:
         raise HTTPException(status_code=409, detail="Domain already exists")
@@ -54,7 +85,13 @@ async def update_domain(
     actor: Annotated[User, Depends(require_operator)],
 ) -> Domain:
     domain = await get_or_404(session, Domain, domain_id)
-    before = apply_updates(domain, payload.model_dump(exclude_unset=True))
+    fields = payload.model_dump(exclude_unset=True)
+    _validate_record(
+        fields.get("record_type", domain.record_type),
+        fields.get("value", domain.value),
+        fields.get("ttl", domain.ttl),
+    )
+    before = apply_updates(domain, fields)
     await session.flush()
     await record_audit(session, actor=actor, action="domain.update", target_type="domain",
                        target_id=domain.id, before=before)

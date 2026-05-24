@@ -21,11 +21,15 @@ export function ResourceList<T extends { id: string }>({
   path,
   columns,
   actions,
+  rowActions,
+  refreshToken,
 }: {
   title: string;
   path: string;
   columns: Column<T>[];
   actions?: React.ReactNode;
+  rowActions?: (row: T) => React.ReactNode;
+  refreshToken?: number;
 }) {
   const [rows, setRows] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
@@ -49,7 +53,7 @@ export function ResourceList<T extends { id: string }>({
     return () => {
       cancelled = true;
     };
-  }, [path]);
+  }, [path, refreshToken]);
 
   const filtered = query
     ? rows.filter((r) =>
@@ -59,17 +63,17 @@ export function ResourceList<T extends { id: string }>({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">{title}</h1>
         {actions}
       </div>
       <input
         className="input max-w-sm"
-        placeholder="Filter…"
+        placeholder="Поиск…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      {error && <div className="text-red-400">Error: {error}</div>}
+      {error && <div className="text-red-400">Ошибка: {error}</div>}
       <div className="card overflow-x-auto p-0">
         <table className="data">
           <thead>
@@ -77,17 +81,23 @@ export function ResourceList<T extends { id: string }>({
               {columns.map((c) => (
                 <th key={String(c.key)}>{c.label}</th>
               ))}
+              {rowActions && <th className="text-right" />}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={columns.length}>Loading…</td>
+                <td colSpan={columns.length + (rowActions ? 1 : 0)}>
+                  Загрузка…
+                </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="text-slate-500">
-                  No records
+                <td
+                  colSpan={columns.length + (rowActions ? 1 : 0)}
+                  className="text-slate-500"
+                >
+                  Нет записей
                 </td>
               </tr>
             ) : (
@@ -107,13 +117,18 @@ export function ResourceList<T extends { id: string }>({
                       </td>
                     );
                   })}
+                  {rowActions && (
+                    <td className="whitespace-nowrap text-right">
+                      {rowActions(row)}
+                    </td>
+                  )}
                 </tr>
               ))
             )}
           </tbody>
         </table>
       </div>
-      <div className="text-xs text-slate-500">{total} total</div>
+      <div className="text-xs text-slate-500">Всего: {total}</div>
     </div>
   );
 }

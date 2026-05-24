@@ -25,6 +25,11 @@ async def settings_info(_: Annotated[User, Depends(require_viewer)]) -> dict[str
         "traefik_cert_resolver": app_settings.traefik_cert_resolver,
         "web_entrypoint": app_settings.traefik_web_entrypoint,
         "websecure_entrypoint": app_settings.traefik_websecure_entrypoint,
+        "wg_hub_endpoint": app_settings.wg_hub_endpoint,
+        "wg_hub_tunnel_subnet": app_settings.wg_hub_tunnel_subnet,
+        "wg_hub_configured": bool(
+            app_settings.wg_hub_public_key and app_settings.wg_hub_endpoint
+        ),
     }
 
 

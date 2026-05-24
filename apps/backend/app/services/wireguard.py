@@ -12,6 +12,8 @@ compatible with ``wg genkey`` / ``wg pubkey``.
 from __future__ import annotations
 
 import base64
+import ipaddress
+from collections.abc import Iterable
 
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 from cryptography.hazmat.primitives.serialization import (
@@ -33,6 +35,29 @@ def generate_keypair() -> tuple[str, str]:
         base64.b64encode(private_raw).decode(),
         base64.b64encode(public_raw).decode(),
     )
+
+
+def hub_tunnel_ip(subnet: str) -> str:
+    """The hub's own tunnel address — the first host in the subnet (e.g. .1)."""
+    net = ipaddress.ip_network(subnet, strict=False)
+    return str(next(net.hosts()))
+
+
+def allocate_tunnel_ip(subnet: str, used: Iterable[str]) -> str:
+    """Return the next free host IP in ``subnet``.
+
+    The hub itself occupies the first host address, so it is always reserved.
+    Any address already present in ``used`` (with or without a ``/prefix``
+    suffix) is skipped. Raises ``ValueError`` when the subnet is exhausted.
+    """
+    net = ipaddress.ip_network(subnet, strict=False)
+    taken = {str(ipaddress.ip_address(ip.split("/")[0])) for ip in used if ip}
+    taken.add(hub_tunnel_ip(subnet))
+    for host in net.hosts():
+        candidate = str(host)
+        if candidate not in taken:
+            return candidate
+    raise ValueError(f"No free tunnel IP available in {subnet}")
 
 
 def render_peer_config(

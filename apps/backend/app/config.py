@@ -52,6 +52,15 @@ class Settings(BaseSettings):
         default_factory=lambda: ["http://localhost:3000"]
     )
 
+    # --- WireGuard hub -----------------------------------------------------
+    # The single VPS hub all site gateways tunnel into. Used to auto-fill
+    # generated gateway configs so operators get a ready-to-use file. The
+    # public key and endpoint are not secrets (the private key never leaves
+    # the hub). Tunnel IPs for site gateways are allocated from the hub subnet.
+    wg_hub_public_key: str = Field(default="")
+    wg_hub_endpoint: str = Field(default="")  # host:port, e.g. vps.example.com:51820
+    wg_hub_tunnel_subnet: str = Field(default="10.10.0.0/24")
+
     # --- Config rendering --------------------------------------------------
     # Directory where the rendered Traefik dynamic configuration is written.
     traefik_dynamic_dir: str = Field(default="/data/traefik/dynamic")
