@@ -18,10 +18,11 @@ cp .env.example .env
 # superadmin creds, ACME_EMAIL, ADMIN_DOMAIN, PUBLIC_API_BASE_URL.
 
 # ADMIN_DOMAIN is the panel's public hostname. Traefik turns it into the
-# Host() matcher and the Let's Encrypt cert domain; without it the panel is
-# served with a self-signed cert and browsers reject the connection. Compose
-# reads its interpolation .env from the compose-file directory rather than this
-# one, so export ADMIN_DOMAIN for manual runs (deploy.sh does this for you).
+# Host() matcher and the Let's Encrypt cert domain; without it compose refuses
+# to start, because an empty value renders the invalid rule Host(``) — Traefik
+# drops both routers and every request 404s. Compose reads its interpolation
+# .env from the compose-file directory rather than this one, so export
+# ADMIN_DOMAIN for manual runs (deploy.sh does this for you).
 export ADMIN_DOMAIN=admin.mishteam.site
 
 docker compose \

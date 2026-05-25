@@ -37,7 +37,7 @@ services:
     # certificate. Without a Host() matcher ACME has no domain to issue for, and
     # without certresolver Traefik serves its self-signed default cert.
     labels:
-      - "traefik.http.routers.cp-api.rule=Host(`${ADMIN_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/healthz`))"
+      - "traefik.http.routers.cp-api.rule=Host(`${ADMIN_DOMAIN:?ADMIN_DOMAIN must be set for the production stack (e.g. admin.example.com)}`) && (PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/healthz`))"
       - "traefik.http.routers.cp-api.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
     deploy:
       resources:
@@ -54,7 +54,7 @@ services:
     ports: !reset []
     logging: *default-logging
     labels:
-      - "traefik.http.routers.cp-ui.rule=Host(`${ADMIN_DOMAIN}`)"
+      - "traefik.http.routers.cp-ui.rule=Host(`${ADMIN_DOMAIN:?ADMIN_DOMAIN must be set for the production stack (e.g. admin.example.com)}`)"
       - "traefik.http.routers.cp-ui.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
 
   traefik:

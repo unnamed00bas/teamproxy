@@ -72,6 +72,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate compose files
+        # The prod overlay requires ADMIN_DOMAIN (it renders Host(`${ADMIN_DOMAIN:?...}`)),
+        # so supply a placeholder here purely to exercise interpolation — a real
+        # deploy gets the value from the GitHub Actions ADMIN_DOMAIN variable.
+        env:
+          ADMIN_DOMAIN: ci.example.com
         run: |
           cp .env.example .env
           docker compose -f infra/compose/docker-compose.yml config --quiet
