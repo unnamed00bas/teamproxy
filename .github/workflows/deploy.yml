@@ -47,6 +47,10 @@ jobs:
           ADMIN_DOMAIN=${{ vars.ADMIN_DOMAIN }}
           PUBLIC_API_BASE_URL=${{ secrets.PUBLIC_API_BASE_URL }}
           CORS_ORIGINS=${{ secrets.PUBLIC_API_BASE_URL }}
+          WG_HOST=${{ vars.WG_HOST || secrets.SSH_HOST }}
+          WGEASY_PASSWORD=${{ secrets.WGEASY_PASSWORD }}
+          WGEASY_API_URL=http://wg-easy:51821
+          WGEASY_PUBLIC_URL=https://wg.${{ vars.ADMIN_DOMAIN }}
           EOF
 
       - name: Sync repository to server
