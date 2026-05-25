@@ -44,6 +44,7 @@ jobs:
           DATABASE_URL=postgresql+asyncpg://control:${{ secrets.POSTGRES_PASSWORD }}@db:5432/control_plane
           REDIS_URL=redis://redis:6379/0
           ACME_EMAIL=${{ secrets.ACME_EMAIL }}
+          ADMIN_DOMAIN=${{ vars.ADMIN_DOMAIN }}
           PUBLIC_API_BASE_URL=${{ secrets.PUBLIC_API_BASE_URL }}
           CORS_ORIGINS=${{ secrets.PUBLIC_API_BASE_URL }}
           EOF

@@ -15,7 +15,14 @@
 git clone <repo> /opt/control-plane && cd /opt/control-plane
 cp .env.example .env
 # Edit .env: strong SECRET_KEY (openssl rand -hex 32), DB password,
-# superadmin creds, ACME_EMAIL, PUBLIC_API_BASE_URL.
+# superadmin creds, ACME_EMAIL, ADMIN_DOMAIN, PUBLIC_API_BASE_URL.
+
+# ADMIN_DOMAIN is the panel's public hostname. Traefik turns it into the
+# Host() matcher and the Let's Encrypt cert domain; without it the panel is
+# served with a self-signed cert and browsers reject the connection. Compose
+# reads its interpolation .env from the compose-file directory rather than this
+# one, so export ADMIN_DOMAIN for manual runs (deploy.sh does this for you).
+export ADMIN_DOMAIN=admin.mishteam.site
 
 docker compose \
   -f infra/compose/docker-compose.yml \
@@ -30,9 +37,9 @@ lifespan seeds the first superadmin if the users table is empty.
 
 | Service | Exposed | Notes |
 |---------|---------|-------|
-| traefik | 80/443 | only public surface in prod |
-| frontend | via traefik | `PathPrefix(/)`, priority 1 |
-| backend | via traefik | `PathPrefix(/api), /docs, /healthz` |
+| traefik | 80/443 | only public surface in prod; Let's Encrypt via `letsencrypt` resolver |
+| frontend | via traefik | prod: `Host(ADMIN_DOMAIN)`, priority 1 |
+| backend | via traefik | prod: `Host(ADMIN_DOMAIN) && (PathPrefix(/api), /docs, /healthz)` |
 | worker/beat | internal | Celery |
 | db/redis | internal | named volumes `pgdata`, `redisdata` |
 

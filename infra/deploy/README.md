@@ -70,6 +70,7 @@ Repository → **Settings → Secrets and variables → Actions**.
 |----------|---------|
 | `SSH_PORT` | `22` |
 | `DEPLOY_PATH` | `/opt/control-plane` |
+| `ADMIN_DOMAIN` | _none_ — **required** for TLS; the panel's public hostname (e.g. `admin.mishteam.site`). Traefik uses it as the `Host()` matcher and the Let's Encrypt cert domain. If unset, the panel is served with a self-signed cert and browsers reject it. |
 
 ## Trigger
 
