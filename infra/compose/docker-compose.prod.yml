@@ -73,8 +73,8 @@ services:
 
   traefik:
     logging: *default-logging
-    command:
-      - --configFile=/etc/traefik/traefik.yml
+    # Inherit the base CLI static config; prod only drops the public 8080
+    # dashboard port (kept internal) and adds log rotation.
     ports: !override
       - "80:80"
       - "443:443"
