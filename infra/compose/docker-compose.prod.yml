@@ -73,8 +73,8 @@ services:
 
   traefik:
     logging: *default-logging
-    command:
-      - --configFile=/etc/traefik/traefik.yml
+    # Static config (incl. the ACME resolver and its email) is defined as CLI
+    # flags in the base file so Compose interpolates ACME_EMAIL; no override here.
     ports: !override
       - "80:80"
       - "443:443"
