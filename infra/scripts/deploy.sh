@@ -15,6 +15,19 @@ TS="$(date +%Y%m%d-%H%M%S)"
 
 log() { echo "[deploy $(date +%T)] $*"; }
 
+# Traefik builds the admin Host() matcher and Let's Encrypt cert domain from
+# ADMIN_DOMAIN at compose-config time. Compose interpolation reads .env from the
+# compose file's directory, not this repo root, so surface ADMIN_DOMAIN (and
+# only it) into the shell — where interpolation always looks first — sourced
+# from the rendered .env. Other vars stay on their compose defaults on purpose.
+if [ -f "$REPO_ROOT/.env" ]; then
+  ADMIN_DOMAIN="$(sed -n 's/^ADMIN_DOMAIN=//p' "$REPO_ROOT/.env" | tail -n1)"
+  export ADMIN_DOMAIN
+  if [ -z "$ADMIN_DOMAIN" ]; then
+    log "WARN: ADMIN_DOMAIN is unset — the admin panel will be served with a self-signed cert (no Let's Encrypt)."
+  fi
+fi
+
 log "Backing up current dynamic configs and database…"
 mkdir -p "$BACKUP_DIR"
 "$REPO_ROOT/infra/scripts/backup.sh" || log "WARN: backup step reported an issue"
