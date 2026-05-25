@@ -23,9 +23,16 @@ log() { echo "[deploy $(date +%T)] $*"; }
 if [ -f "$REPO_ROOT/.env" ]; then
   ADMIN_DOMAIN="$(sed -n 's/^ADMIN_DOMAIN=//p' "$REPO_ROOT/.env" | tail -n1)"
   export ADMIN_DOMAIN
-  if [ -z "$ADMIN_DOMAIN" ]; then
-    log "WARN: ADMIN_DOMAIN is unset — the admin panel will be served with a self-signed cert (no Let's Encrypt)."
-  fi
+fi
+
+# Fail fast on an empty domain. The prod overlay renders the router rules as
+# Host(`${ADMIN_DOMAIN}`); an empty value produces the invalid rule Host(``),
+# which Traefik refuses to load — so both routers are dropped, every request
+# 404s, and ACME has no domain to request a certificate for. A broken outage is
+# worse than a stopped deploy, so refuse to bring the stack up without it.
+if [ -z "${ADMIN_DOMAIN:-}" ]; then
+  log "CRITICAL: ADMIN_DOMAIN is unset or empty. Set it in $REPO_ROOT/.env (e.g. ADMIN_DOMAIN=admin.example.com) — the admin panel cannot be routed without it."
+  exit 1
 fi
 
 log "Backing up current dynamic configs and database…"
