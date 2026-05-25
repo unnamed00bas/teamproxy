@@ -121,7 +121,11 @@ services:
   wg-easy:
     # WireGuard hub + admin panel. Source of truth for peers/clients; the
     # backend talks to its API and the UI links operators to its panel.
-    image: ghcr.io/wg-easy/wg-easy:14
+    # Pinned to 13 on purpose: from v14 the plaintext PASSWORD env no longer
+    # enables panel auth (it silently requires PASSWORD_HASH instead), which
+    # leaves the admin panel wide open. The backend authenticates to this same
+    # panel with PASSWORD via POST /api/session, so plaintext auth is required.
+    image: ghcr.io/wg-easy/wg-easy:13
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
@@ -148,16 +152,39 @@ services:
     # hardcoded API v1.24, which modern daemons reject (min supported >= 1.40).
     image: traefik:v3.6
     restart: unless-stopped
-    environment:
-      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
+    # Static config is supplied as CLI flags (not a mounted file) so Compose
+    # interpolates ${ACME_EMAIL} from .env. Traefik does NOT expand ${...} inside
+    # a static config FILE: a file-based `email: "${ACME_EMAIL}"` is sent to
+    # Let's Encrypt verbatim, fails ACME account registration, and then NO
+    # certificates are issued for any domain. Dynamic config still comes from the
+    # file provider (base.yml + the control-plane generated control-plane.yml).
     command:
-      - --configFile=/etc/traefik/traefik.yml
+      - --global.checkNewVersion=false
+      - --global.sendAnonymousUsage=false
+      - --entryPoints.web.address=:80
+      - --entryPoints.web.http.redirections.entryPoint.to=websecure
+      - --entryPoints.web.http.redirections.entryPoint.scheme=https
+      - --entryPoints.websecure.address=:443
+      - --entryPoints.traefik.address=:8080
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.network=edge
+      - --certificatesResolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}
+      - --certificatesResolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesResolvers.letsencrypt.acme.httpChallenge.entryPoint=web
+      - --log.level=INFO
+      - --log.format=json
+      - --accessLog.format=json
+      - --ping.entryPoint=traefik
     ports:
       - "80:80"
       - "443:443"
       - "8080:8080"
     volumes:
-      - ../traefik/static/traefik.yml:/etc/traefik/traefik.yml:ro
       - ../traefik/dynamic/base.yml:/etc/traefik/dynamic/base.yml:ro
       - traefik_dynamic:/etc/traefik/dynamic
       - letsencrypt:/letsencrypt
