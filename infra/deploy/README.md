@@ -63,6 +63,8 @@ Repository → **Settings → Secrets and variables → Actions**.
 | `FIRST_SUPERADMIN_PASSWORD` | first admin password |
 | `ACME_EMAIL` | email for Let's Encrypt |
 | `PUBLIC_API_BASE_URL` | e.g. `https://cp.example.com` |
+| `WGEASY_PASSWORD` | plaintext wg-easy panel password (the backend logs in with it) |
+| `WGEASY_PASSWORD_HASH` | bcrypt hash of `WGEASY_PASSWORD`, **with each `$` doubled to `$$`**. Generate with `docker run --rm ghcr.io/wg-easy/wg-easy:14 wgpw '<password>'`. Without it the wg-easy admin panel has **no authentication** and `deploy.sh` aborts. |
 
 ### Variables (non-sensitive, optional — sensible defaults shown)
 

@@ -30,8 +30,11 @@ jobs:
           ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Render production .env from secrets
+        # Quoted heredoc (<<'EOF'): the shell writes every line verbatim, so a
+        # '$' inside any secret (e.g. a password) is preserved instead of being
+        # expanded. GitHub still substitutes the ${{ ... }} expressions first.
         run: |
-          cat > .env <<EOF
+          cat > .env <<'EOF'
           ENVIRONMENT=production
           DEBUG=false
           SECRET_KEY=${{ secrets.SECRET_KEY }}
@@ -51,6 +54,16 @@ jobs:
           WGEASY_PASSWORD=${{ secrets.WGEASY_PASSWORD }}
           WGEASY_API_URL=http://wg-easy:51821
           WGEASY_PUBLIC_URL=https://wg.${{ vars.ADMIN_DOMAIN }}
+          EOF
+
+      - name: Render wg-easy panel hash (.env.wgeasy)
+        # Delivered separately (not in .env) so no other secret is exposed to the
+        # third-party wg-easy container. WGEASY_PASSWORD_HASH must hold the bcrypt
+        # hash with every '$' DOUBLED to '$$' (Compose un-escapes it back to '$').
+        # The quoted heredoc keeps the '$$' literal in the file.
+        run: |
+          cat > .env.wgeasy <<'EOF'
+          PASSWORD_HASH=${{ secrets.WGEASY_PASSWORD_HASH }}
           EOF
 
       - name: Sync repository to server

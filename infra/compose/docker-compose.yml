@@ -121,11 +121,7 @@ services:
   wg-easy:
     # WireGuard hub + admin panel. Source of truth for peers/clients; the
     # backend talks to its API and the UI links operators to its panel.
-    # Pinned to 13 on purpose: from v14 the plaintext PASSWORD env no longer
-    # enables panel auth (it silently requires PASSWORD_HASH instead), which
-    # leaves the admin panel wide open. The backend authenticates to this same
-    # panel with PASSWORD via POST /api/session, so plaintext auth is required.
-    image: ghcr.io/wg-easy/wg-easy:13
+    image: ghcr.io/wg-easy/wg-easy:14
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
@@ -133,11 +129,22 @@ services:
     sysctls:
       net.ipv4.ip_forward: "1"
       net.ipv4.conf.all.src_valid_mark: "1"
+    # v14 gates the panel on PASSWORD_HASH (a bcrypt hash); the old plaintext
+    # PASSWORD env became a no-op and silently leaves the panel WIDE OPEN, so we
+    # must supply PASSWORD_HASH. The hash contains '$', which Compose ${...}
+    # interpolation would mangle (treating $xx as variables), so it is delivered
+    # via env_file — read verbatim, with the doubled '$$' un-escaped to '$'.
+    # Put it in .env.wgeasy (see .env.example for how to generate it). The
+    # backend logs into this same panel with the PLAINTEXT WGEASY_PASSWORD over
+    # /api/session, so that value must be the password this hash was made from.
+    # required:false keeps `compose config` and dev working without the file;
+    # deploy.sh refuses to ship production when the hash is missing.
+    env_file:
+      - path: ../../.env.wgeasy
+        required: false
     environment:
       # Public host/IP of the VPS that WireGuard clients dial into.
       WG_HOST: ${WG_HOST:-localhost}
-      # Panel password; the backend reuses it to authenticate to the API.
-      PASSWORD: ${WGEASY_PASSWORD:-}
       PORT: "51821"
       WG_PORT: "51820"
     volumes:

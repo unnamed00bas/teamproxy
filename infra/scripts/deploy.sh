@@ -35,6 +35,16 @@ if [ -z "${ADMIN_DOMAIN:-}" ]; then
   exit 1
 fi
 
+# Fail closed on a missing wg-easy panel hash. wg-easy v14 gates the admin panel
+# on PASSWORD_HASH; with no hash it serves the panel WITHOUT authentication. The
+# hash is delivered to the container via .env.wgeasy (env_file). Refuse to ship
+# an unprotected VPN admin panel — an open panel is worse than a stopped deploy.
+WGEASY_HASH="$(sed -n 's/^PASSWORD_HASH=//p' "$REPO_ROOT/.env.wgeasy" 2>/dev/null | tail -n1)"
+if [ -z "${WGEASY_HASH:-}" ]; then
+  log "CRITICAL: PASSWORD_HASH is missing from $REPO_ROOT/.env.wgeasy — the wg-easy admin panel would be exposed without a password. Set the WGEASY_PASSWORD_HASH secret (bcrypt hash with each \$ doubled to \$\$); see .env.example."
+  exit 1
+fi
+
 log "Backing up current dynamic configs and database…"
 mkdir -p "$BACKUP_DIR"
 "$REPO_ROOT/infra/scripts/backup.sh" || log "WARN: backup step reported an issue"
