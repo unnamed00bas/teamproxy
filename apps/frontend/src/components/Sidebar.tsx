@@ -2,20 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
-
-const NAV = [
-  { href: "/", label: "Панель" },
-  { href: "/sites", label: "Сайты" },
-  { href: "/peers", label: "VPN / Пиры" },
-  { href: "/nodes", label: "Узлы" },
-  { href: "/services", label: "Сервисы" },
-  { href: "/publications", label: "Публикации" },
-  { href: "/dns", label: "DNS / TLS" },
-  { href: "/deployments", label: "Развёртывания" },
-  { href: "/audit", label: "Журнал аудита" },
-  { href: "/settings", label: "Настройки" },
-];
+import type { SettingsInfo } from "@/lib/types";
 
 export function Sidebar({
   open,
@@ -26,11 +16,21 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [wgUrl, setWgUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    api
+      .get<SettingsInfo>("/settings/info")
+      .then((info) => setWgUrl(info.wgeasy_public_url || null))
+      .catch(() => setWgUrl(null));
+  }, []);
 
   function logout() {
     clearToken();
     router.push("/login");
   }
+
+  const active = pathname === "/";
 
   return (
     <>
@@ -48,24 +48,26 @@ export function Sidebar({
       >
         <div className="px-4 py-5 text-lg font-semibold">Control Plane</div>
         <nav className="flex-1 space-y-1 overflow-y-auto px-2">
-          {NAV.map((item) => {
-            const active =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={`block rounded-md px-3 py-2 text-sm ${
-                  active ? "bg-accent text-white" : "hover:bg-surface"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+          <Link
+            href="/"
+            onClick={onClose}
+            className={`block rounded-md px-3 py-2 text-sm ${
+              active ? "bg-accent text-white" : "hover:bg-surface"
+            }`}
+          >
+            Сервисы
+          </Link>
+          {wgUrl && (
+            <a
+              href={wgUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onClose}
+              className="block rounded-md px-3 py-2 text-sm hover:bg-surface"
+            >
+              WG-панель ↗
+            </a>
+          )}
         </nav>
         <button onClick={logout} className="btn-ghost m-3">
           Выйти

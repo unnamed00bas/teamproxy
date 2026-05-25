@@ -30,6 +30,8 @@ async def settings_info(_: Annotated[User, Depends(require_viewer)]) -> dict[str
         "wg_hub_configured": bool(
             app_settings.wg_hub_public_key and app_settings.wg_hub_endpoint
         ),
+        "wgeasy_public_url": app_settings.wgeasy_public_url,
+        "wgeasy_configured": bool(app_settings.wgeasy_api_url),
     }
 
 

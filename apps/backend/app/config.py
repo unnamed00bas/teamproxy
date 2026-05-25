@@ -61,6 +61,14 @@ class Settings(BaseSettings):
     wg_hub_endpoint: str = Field(default="")  # host:port, e.g. vps.example.com:51820
     wg_hub_tunnel_subnet: str = Field(default="10.10.0.0/24")
 
+    # --- wg-easy -----------------------------------------------------------
+    # wg-easy is the WireGuard hub and the source of truth for peers/clients.
+    # The backend talks to its HTTP API to list/create client configs; the UI
+    # links operators to the wg-easy panel for full tunnel management.
+    wgeasy_api_url: str = Field(default="")  # internal URL, e.g. http://wg-easy:51821
+    wgeasy_password: str = Field(default="")  # password for the wg-easy session API
+    wgeasy_public_url: str = Field(default="")  # public panel URL for the menu link
+
     # --- Config rendering --------------------------------------------------
     # Directory where the rendered Traefik dynamic configuration is written.
     traefik_dynamic_dir: str = Field(default="/data/traefik/dynamic")

@@ -14,6 +14,7 @@ class Service(UUIDMixin, TimestampMixin, Base):
         ForeignKey("sites.id", ondelete="CASCADE"), nullable=False
     )
     node_id: Mapped[str | None] = mapped_column(ForeignKey("nodes.id", ondelete="SET NULL"))
+    peer_id: Mapped[str | None] = mapped_column(ForeignKey("peers.id", ondelete="SET NULL"))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
@@ -34,6 +35,7 @@ class Service(UUIDMixin, TimestampMixin, Base):
 
     site = relationship("Site", back_populates="services")
     node = relationship("Node", back_populates="services")
+    peer = relationship("Peer")
     publications = relationship(
         "Publication", back_populates="service", cascade="all, delete-orphan"
     )

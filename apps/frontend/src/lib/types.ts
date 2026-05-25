@@ -1,81 +1,45 @@
 // Local copy of the API contracts. The canonical source is
 // packages/shared-types; this keeps the frontend buildable in isolation.
 
-export type SiteStatus =
-  | "online"
-  | "offline"
-  | "degraded"
-  | "disabled"
-  | "archived"
-  | "unknown";
+export type ProtocolType = "http" | "https" | "tcp" | "udp";
 
-export interface Site {
-  id: string;
-  slug: string;
-  name: string;
-  location?: string | null;
-  status: SiteStatus;
-  nodes_count?: number;
-  services_count?: number;
-  publications_count?: number;
-  peers_count?: number;
-  last_seen?: string | null;
+export interface WgInfo {
+  client_id: string | null;
+  name: string | null;
+  tunnel_ip: string | null;
+  public_key: string | null;
 }
 
-export interface Service {
+export interface PublishedService {
   id: string;
-  site_id: string;
   name: string;
-  slug: string;
-  protocol_type: string;
+  domain: string | null;
+  protocol_type: ProtocolType;
   backend_host: string;
   backend_port: number;
-  exposure_mode: string;
+  tls_enabled: boolean;
+  proxy_enabled: boolean;
   enabled: boolean;
+  publication_id: string | null;
+  wg: WgInfo | null;
 }
 
-export interface Publication {
-  id: string;
-  service_id: string;
-  entrypoint_type: string;
-  domain_or_sni?: string | null;
-  tls_mode: string;
-  public_enabled: boolean;
-  maintenance_mode: boolean;
-  priority: number;
-}
-
-export interface Peer {
+export interface WgClientOption {
   id: string;
   name: string;
-  site_id?: string | null;
-  assigned_tunnel_ip?: string | null;
-  role: string;
-  status: string;
+  tunnel_ip: string | null;
   enabled: boolean;
 }
 
-export interface DashboardStats {
-  sites_total: number;
-  sites_online: number;
-  sites_offline: number;
-  peers_total: number;
-  peers_active: number;
-  services_total: number;
-  publications_total: number;
-  publications_public: number;
-  broken_routes: number;
-  expiring_certificates: number;
-  recent_audit: AuditEvent[];
-  recent_failed_deploys: unknown[];
+export interface PublishedServiceCreateResult {
+  service: PublishedService;
+  wg_config: string | null;
+  wg_config_filename: string | null;
 }
 
-export interface AuditEvent {
-  id: string;
-  created_at: string;
-  actor_email?: string | null;
-  action: string;
-  target_type?: string | null;
-  target_id?: string | null;
-  result: string;
+export interface SettingsInfo {
+  project_name?: string;
+  environment?: string;
+  wgeasy_public_url?: string;
+  wgeasy_configured?: boolean;
 }

@@ -27,6 +27,8 @@ class Peer(UUIDMixin, TimestampMixin, Base):
     allowed_ips: Mapped[list[str]] = mapped_column(JSON, default=list)
     endpoint: Mapped[str | None] = mapped_column(String(255))
     persistent_keepalive: Mapped[int | None] = mapped_column(BigInteger)
+    # Identifier of the corresponding client in wg-easy (the source of truth).
+    external_ref: Mapped[str | None] = mapped_column(String(255), index=True)
     role: Mapped[PeerRole] = mapped_column(
         Enum(PeerRole, native_enum=False), default=PeerRole.site_gateway, nullable=False
     )
