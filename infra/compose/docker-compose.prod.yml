@@ -57,6 +57,20 @@ services:
       - "traefik.http.routers.cp-ui.rule=Host(`${ADMIN_DOMAIN:?ADMIN_DOMAIN must be set for the production stack (e.g. admin.example.com)}`)"
       - "traefik.http.routers.cp-ui.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
 
+  wg-easy:
+    logging: *default-logging
+    # Only the WireGuard UDP port is public; the panel is served through Traefik
+    # on a subdomain of ADMIN_DOMAIN (e.g. wg.admin.example.com).
+    ports: !override
+      - "51820:51820/udp"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=edge"
+      - "traefik.http.routers.wg-easy.rule=Host(`wg.${ADMIN_DOMAIN:?ADMIN_DOMAIN must be set for the production stack (e.g. admin.example.com)}`)"
+      - "traefik.http.routers.wg-easy.entrypoints=websecure"
+      - "traefik.http.routers.wg-easy.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.services.wg-easy.loadbalancer.server.port=51821"
+
   traefik:
     logging: *default-logging
     command:

@@ -118,6 +118,31 @@ services:
       - traefik.http.routers.cp-ui.priority=1
       - traefik.http.services.cp-ui.loadbalancer.server.port=3000
 
+  wg-easy:
+    # WireGuard hub + admin panel. Source of truth for peers/clients; the
+    # backend talks to its API and the UI links operators to its panel.
+    image: ghcr.io/wg-easy/wg-easy:14
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      net.ipv4.ip_forward: "1"
+      net.ipv4.conf.all.src_valid_mark: "1"
+    environment:
+      # Public host/IP of the VPS that WireGuard clients dial into.
+      WG_HOST: ${WG_HOST:-localhost}
+      # Panel password; the backend reuses it to authenticate to the API.
+      PASSWORD: ${WGEASY_PASSWORD:-}
+      PORT: "51821"
+      WG_PORT: "51820"
+    volumes:
+      - wg_easy_data:/etc/wireguard
+    ports:
+      - "51820:51820/udp"
+      - "51821:51821"  # dev only: panel on host; prod routes it via Traefik
+    networks: [internal, edge]
+
   traefik:
     # v3.6+ auto-negotiates the Docker API version with the daemon. Earlier v3.x
     # hardcoded API v1.24, which modern daemons reject (min supported >= 1.40).
@@ -144,6 +169,7 @@ volumes:
   redisdata:
   traefik_dynamic:
   letsencrypt:
+  wg_easy_data:
 
 networks:
   internal:

@@ -35,8 +35,8 @@ async def session_factory():
 
 
 @pytest_asyncio.fixture
-async def client(session_factory):
-    app = create_app()
+async def app(session_factory):
+    application = create_app()
 
     async def _override_get_db():
         async with session_factory() as session:
@@ -47,7 +47,12 @@ async def client(session_factory):
                 await session.rollback()
                 raise
 
-    app.dependency_overrides[get_db] = _override_get_db
+    application.dependency_overrides[get_db] = _override_get_db
+    return application
+
+
+@pytest_asyncio.fixture
+async def client(app):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
